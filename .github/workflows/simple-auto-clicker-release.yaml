@@ -1,0 +1,38 @@
+name: Build and Publish
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '8.x'
+
+    - name: Publish
+      run:  dotnet publish ./src --configuration Release --output ./publish --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true
+
+    - name: Get XML Version in .csproj
+      id: getVersion
+      uses: mavrosxristoforos/get-xml-info@2.0
+      with:
+        xml-file: 'src/SimpleAutoClicker.csproj'
+        xpath: '/Project/PropertyGroup/Version'
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+          tag_name: ${{ steps.getVersion.outputs.info }}
+          files: 
+            ./publish/SimpleAutoClicker.exe
